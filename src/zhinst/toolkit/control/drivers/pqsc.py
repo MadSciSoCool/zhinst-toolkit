@@ -7,10 +7,10 @@ import numpy as np
 import time
 import logging
 
-from zhinst.toolkit.control.drivers.base import BaseInstrument
-from zhinst.toolkit.interface import DeviceTypes
-from zhinst.toolkit.control.node_tree import Parameter
-from zhinst.toolkit.control.parsers import Parse
+from .base import BaseInstrument
+from ...interface import DeviceTypes
+from ..node_tree import Parameter
+from ..parsers import Parse
 
 _logger = logging.getLogger(__name__)
 
@@ -104,7 +104,8 @@ class PQSC(BaseInstrument):
             self._set("execution/repetitions", int(repetitions))
         if holdoff is not None:
             if holdoff < 100e-9:
-                raise ValueError("Hold-off time cannot be smaller than 100 ns!")
+                raise ValueError(
+                    "Hold-off time cannot be smaller than 100 ns!")
             elif holdoff % 100e-9 > 1e-10:
                 raise ValueError("Hold-off time must be multiples of 100 ns!")
             else:
@@ -151,7 +152,8 @@ class PQSC(BaseInstrument):
         )
         self.ref_clock_actual = Parameter(
             self,
-            self._get_node_dict(f"system/clocks/referenceclock/in/sourceactual"),
+            self._get_node_dict(
+                f"system/clocks/referenceclock/in/sourceactual"),
             device=self,
             auto_mapping=True,
         )

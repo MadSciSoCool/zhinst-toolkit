@@ -8,8 +8,8 @@ import re
 import numpy as np
 import deprecation
 
-from zhinst.toolkit.interface import DeviceTypes
-from zhinst.toolkit._version import version as __version__
+from ..interface import DeviceTypes
+from .._version import version as __version__
 
 
 class SequenceCommand(object):
@@ -139,11 +139,13 @@ class SequenceCommand(object):
             raise ValueError("Number of samples cannot be negative!")
         elif target in [DeviceTypes.HDAWG]:
             if i < 32:
-                raise ValueError("Number of samples cannot be lower than 32 samples!")
+                raise ValueError(
+                    "Number of samples cannot be lower than 32 samples!")
             return f"playZero({int(round(i / 16) * 16)});\n"
         elif target in [DeviceTypes.UHFQA, DeviceTypes.UHFLI]:
             if i < 16:
-                raise ValueError("Number of samples cannot be lower than 16 samples!")
+                raise ValueError(
+                    "Number of samples cannot be lower than 16 samples!")
             return f"playZero({int(round(i / 8) * 8)});\n"
 
     @staticmethod
@@ -241,12 +243,14 @@ class SequenceCommand(object):
             raise ValueError("Invalid Values for waveform buffer!")
         elif target in [DeviceTypes.HDAWG]:
             if length < 32:
-                raise ValueError("Buffer Length cannot be lower than 32 samples!")
+                raise ValueError(
+                    "Buffer Length cannot be lower than 32 samples!")
             elif length % 16:
                 raise ValueError("Buffer Length has to be multiple of 16!")
         elif target in [DeviceTypes.UHFQA, DeviceTypes.UHFLI]:
             if length < 16:
-                raise ValueError("Buffer Length cannot be lower than 16 samples!")
+                raise ValueError(
+                    "Buffer Length cannot be lower than 16 samples!")
             elif length % 8:
                 raise ValueError("Buffer Length has to be multiple of 8!")
         return (
@@ -262,7 +266,8 @@ class SequenceCommand(object):
         if length % 16:
             raise ValueError("Length has to be multiple of 16!")
         if not (length > pos and length > width):
-            raise ValueError("Length has to be larger than position and width!")
+            raise ValueError(
+                "Length has to be larger than position and width!")
         if not (width > 0):
             raise ValueError("Values cannot be negative!")
         return (
@@ -280,7 +285,8 @@ class SequenceCommand(object):
         if length % 16:
             raise ValueError("Length has to be multiple of 16!")
         if not (length > pos and length > width):
-            raise ValueError("Length has to be larger than position and width!")
+            raise ValueError(
+                "Length has to be larger than position and width!")
         if not (width > 0):
             raise ValueError("Values cannot be negative!")
         return (
@@ -308,10 +314,12 @@ class SequenceCommand(object):
         s += "\n"
         if n > 1:
             s += (
-                f"wave w_1 = add(" + ", ".join([f"w{i+1}_I" for i in range(n)]) + ");\n"
+                f"wave w_1 = add(" +
+                ", ".join([f"w{i+1}_I" for i in range(n)]) + ");\n"
             )
             s += (
-                f"wave w_2 = add(" + ", ".join([f"w{i+1}_Q" for i in range(n)]) + ");\n"
+                f"wave w_2 = add(" +
+                ", ".join([f"w{i+1}_Q" for i in range(n)]) + ");\n"
             )
         else:
             s += "wave w_1 = w1_I;\n"

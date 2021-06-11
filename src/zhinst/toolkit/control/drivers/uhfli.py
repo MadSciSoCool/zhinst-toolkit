@@ -5,14 +5,14 @@
 
 import numpy as np
 
-from zhinst.toolkit.control.drivers.base import (
+from .base import (
     BaseInstrument,
     DAQModule as DAQ,
     SweeperModule as Sweeper,
     ToolkitError,
 )
-from zhinst.toolkit.control.drivers.uhfqa import AWG
-from zhinst.toolkit.interface import DeviceTypes
+from .uhfqa import AWG
+from ...interface import DeviceTypes
 
 
 class UHFLI(BaseInstrument):

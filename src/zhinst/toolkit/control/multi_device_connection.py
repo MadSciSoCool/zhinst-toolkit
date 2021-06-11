@@ -7,10 +7,10 @@ import numpy as np
 import json
 import pathlib
 
-from zhinst.toolkit.interface import InstrumentConfiguration
-from zhinst.toolkit.control.connection import ZIConnection
-from zhinst.toolkit.control.drivers import UHFQA, HDAWG, PQSC, UHFLI, MFLI
-from zhinst.toolkit.control.drivers.base import ToolkitError, BaseInstrument
+from ..interface import InstrumentConfiguration
+from ..control.connection import ZIConnection
+from ..control.drivers import UHFQA, HDAWG, PQSC, UHFLI, MFLI
+from ..control.drivers.base import ToolkitError, BaseInstrument
 
 
 class MultiDeviceConnection:

@@ -12,8 +12,8 @@ import logging
 
 from .sequence_commands import SequenceCommand
 from .utils import SequenceType, TriggerMode, Alignment
-from zhinst.toolkit.interface import DeviceTypes
-from zhinst.toolkit._version import version as __version__
+from ..interface import DeviceTypes
+from .._version import version as __version__
 
 _logger = logging.getLogger(__name__)
 
@@ -30,7 +30,8 @@ def is_greater_equal(min_value):
         if type(value) is not list:
             value = [value]
         if np.min(value) < min_value:
-            raise ValueError(f"{attribute.name} cannot be smaller than {min_value}!")
+            raise ValueError(
+                f"{attribute.name} cannot be smaller than {min_value}!")
 
     return compare
 
@@ -47,7 +48,8 @@ def is_smaller_equal(max_value):
         if type(value) is not list:
             value = [value]
         if np.max(value) > max_value:
-            raise ValueError(f"{attribute.name} cannot be greater than {max_value}!")
+            raise ValueError(
+                f"{attribute.name} cannot be greater than {max_value}!")
 
     return compare
 
@@ -68,7 +70,8 @@ def is_multiple(factor):
             value = [value]
         for i in value:
             if i % factor != 0:
-                raise ValueError(f"{attribute.name} must be multiple of {factor}!")
+                raise ValueError(
+                    f"{attribute.name} must be multiple of {factor}!")
 
     return compare
 
@@ -130,7 +133,8 @@ class Sequence(object):
     period = attr.ib(default=100e-6, validator=is_greater_equal(0))
     trigger_mode = attr.ib(
         default=TriggerMode.SEND_TRIGGER,
-        converter=lambda m: TriggerMode.NONE if m == "None" else TriggerMode(m),
+        converter=lambda m: TriggerMode.NONE if m == "None" else TriggerMode(
+            m),
     )
     trigger_samples = attr.ib(
         default=32,
@@ -140,7 +144,8 @@ class Sequence(object):
     alignment = attr.ib(
         default=Alignment.END_WITH_TRIGGER, converter=lambda a: Alignment(a)
     )
-    n_HW_loop = attr.ib(default=1, converter=int, validator=is_greater_equal(0))
+    n_HW_loop = attr.ib(default=1, converter=int,
+                        validator=is_greater_equal(0))
     dead_time = attr.ib(default=5e-6, validator=is_greater_equal(0))
     trigger_delay = attr.ib(default=0)
     latency = attr.ib(default=160e-9, validator=is_greater_equal(0))
@@ -203,7 +208,8 @@ class Sequence(object):
             self.period - self.dead_time + self.trigger_delay
         )
         # Convert dead_time to number of samples
-        self.dead_samples = self.time_to_samples(self.dead_time - self.trigger_delay)
+        self.dead_samples = self.time_to_samples(
+            self.dead_time - self.trigger_delay)
         # Set the correct clock rate, trigger latency compensation
         # and QA trigger command depending on the device type
         if self.target in [DeviceTypes.HDAWG]:
@@ -297,7 +303,8 @@ class Sequence(object):
             TriggerMode.EXTERNAL_TRIGGER,
             TriggerMode.RECEIVE_TRIGGER,
         ]:
-            self.trigger_cmd_1 = SequenceCommand.wait_dig_trigger(1, self.target)
+            self.trigger_cmd_1 = SequenceCommand.wait_dig_trigger(
+                1, self.target)
             self.trigger_cmd_2 = SequenceCommand.comment_line()
             self.dead_cycles = 0
             self.trigger_cmd_define = SequenceCommand.comment_line()
@@ -305,7 +312,8 @@ class Sequence(object):
                 SequenceCommand.comment_line() + SequenceCommand.comment_line()
             )
             # Wait for external trigger
-            self.trigger_cmd_wait = SequenceCommand.wait_dig_trigger(1, self.target)
+            self.trigger_cmd_wait = SequenceCommand.wait_dig_trigger(
+                1, self.target)
         elif self.trigger_mode == TriggerMode.ZSYNC_TRIGGER:
             self.trigger_cmd_define = SequenceCommand.comment_line()
             self.trigger_cmd_send = SequenceCommand.comment_line()
@@ -343,7 +351,8 @@ class Sequence(object):
 
         """
         gauss_length = (
-            self.time_to_cycles(2 * truncation * width, wait_time=False) // 16 * 16
+            self.time_to_cycles(2 * truncation * width,
+                                wait_time=False) // 16 * 16
         )
         gauss_pos = int(gauss_length / 2)
         gauss_width = self.time_to_cycles(width, wait_time=False)
@@ -396,7 +405,8 @@ class SimpleSequence(Sequence):
 
     """
 
-    buffer_lengths = attr.ib(default=[800], validator=attr.validators.instance_of(list))
+    buffer_lengths = attr.ib(
+        default=[800], validator=attr.validators.instance_of(list))
     delay_times = attr.ib(default=[0])
     wait_samples_updated = attr.ib(default=[0])
     dead_samples_updated = attr.ib(default=[0])
@@ -469,8 +479,10 @@ class SimpleSequence(Sequence):
             self.delay_times = np.append(self.delay_times, np.zeros(n))
         # Update the number of samples to wait before and after playing the waveform
         # according to the list of delay_times, buffer lengths and alignment option.
-        self.wait_samples_updated = [self.wait_samples for i in range(self.n_HW_loop)]
-        self.dead_samples_updated = [self.dead_samples for i in range(self.n_HW_loop)]
+        self.wait_samples_updated = [
+            self.wait_samples for i in range(self.n_HW_loop)]
+        self.dead_samples_updated = [
+            self.dead_samples for i in range(self.n_HW_loop)]
         for i in range(self.n_HW_loop):
             if self.alignment == Alignment.START_WITH_TRIGGER:
                 self.wait_samples_updated[i] += self.delay_times[i]
@@ -520,7 +532,8 @@ class TriggerSequence(Sequence):
             self.sequence, SequenceType.TRIGGER
         )
         # Define trigger waveform
-        self.sequence += SequenceCommand.inline_comment("Trigger waveform definition")
+        self.sequence += SequenceCommand.inline_comment(
+            "Trigger waveform definition")
         self.sequence += self.trigger_cmd_define
         self.sequence += SequenceCommand.new_line()
         self.sequence += SequenceCommand.inline_comment("Trigger commands")
@@ -605,12 +618,14 @@ class RabiSequence(Sequence):
         self.n_HW_loop = len(self.pulse_amplitudes)
         self.get_gauss_params(self.pulse_width, self.pulse_truncation)
         if self.trigger_mode == TriggerMode.NONE:
-            self.wait_cycles = self.time_to_cycles(self.period - self.dead_time)
+            self.wait_cycles = self.time_to_cycles(
+                self.period - self.dead_time)
             self.dead_cycles = (
                 self.time_to_cycles(self.dead_time) - self.gauss_params[0] / 8
             )
         elif self.trigger_mode == TriggerMode.SEND_TRIGGER:
-            self.wait_cycles = self.time_to_cycles(self.period - self.dead_time)
+            self.wait_cycles = self.time_to_cycles(
+                self.period - self.dead_time)
             if self.alignment == Alignment.END_WITH_TRIGGER:
                 self.wait_cycles -= self.gauss_params[0] / 8
             elif self.alignment == Alignment.START_WITH_TRIGGER:
@@ -700,7 +715,8 @@ class T1Sequence(Sequence):
         self.n_HW_loop = len(self.delay_times)
         self.get_gauss_params(self.pulse_width, self.pulse_truncation)
         if self.trigger_mode in [TriggerMode.NONE, TriggerMode.SEND_TRIGGER]:
-            self.wait_cycles = self.time_to_cycles(self.period - self.dead_time)
+            self.wait_cycles = self.time_to_cycles(
+                self.period - self.dead_time)
         elif self.trigger_mode in [
             TriggerMode.EXTERNAL_TRIGGER,
             TriggerMode.RECEIVE_TRIGGER,
@@ -749,7 +765,8 @@ class T2Sequence(T1Sequence):
     """
 
     def write_sequence(self):
-        self.sequence = SequenceCommand.header_comment(sequence_type="T2* (Ramsey)")
+        self.sequence = SequenceCommand.header_comment(
+            sequence_type="T2* (Ramsey)")
         self.sequence += SequenceCommand.init_gauss_scaled(
             0.5 * self.pulse_amplitude, self.gauss_params
         )
@@ -850,7 +867,8 @@ class ReadoutSequence(Sequence):
 
     def write_sequence(self):
         self.sequence = SequenceCommand.header_comment(sequence_type="Readout")
-        length = self.time_to_cycles(self.readout_length, wait_time=False) // 16 * 16
+        length = self.time_to_cycles(
+            self.readout_length, wait_time=False) // 16 * 16
         self.sequence += SequenceCommand.init_readout_pulse(
             length,
             self.readout_amplitudes,
@@ -876,7 +894,8 @@ class ReadoutSequence(Sequence):
         if self.alignment == Alignment.END_WITH_TRIGGER:
             temp -= self.readout_length
         elif self.alignment == Alignment.START_WITH_TRIGGER:
-            self.dead_cycles = self.time_to_cycles(self.dead_time - self.readout_length)
+            self.dead_cycles = self.time_to_cycles(
+                self.dead_time - self.readout_length)
         if self.trigger_mode == TriggerMode.NONE:
             self.wait_cycles = self.time_to_cycles(temp)
         elif self.trigger_mode == TriggerMode.SEND_TRIGGER:
@@ -1012,10 +1031,12 @@ class PulsedSpectroscopySequence(Sequence):
             if (
                 self.period - self.dead_time + self.trigger_delay - self.pulse_length
             ) < 0:
-                raise ValueError("Wait time cannot be shorter than pulse length!")
+                raise ValueError(
+                    "Wait time cannot be shorter than pulse length!")
         elif self.alignment == Alignment.START_WITH_TRIGGER:
             if (self.dead_time - self.trigger_delay - self.pulse_length) < 0:
-                raise ValueError("Dead time cannot be shorter than pulse length!")
+                raise ValueError(
+                    "Dead time cannot be shorter than pulse length!")
 
 
 @attr.s
@@ -1029,7 +1050,8 @@ class CWSpectroscopySequence(Sequence):
     """
 
     def write_sequence(self):
-        self.sequence = SequenceCommand.header_comment(sequence_type="CW Spectroscopy")
+        self.sequence = SequenceCommand.header_comment(
+            sequence_type="CW Spectroscopy")
         self.sequence += SequenceCommand.repeat(self.repetitions)
         self.sequence += self.trigger_cmd_1
         self.sequence += SequenceCommand.wait(self.wait_cycles)
@@ -1041,9 +1063,11 @@ class CWSpectroscopySequence(Sequence):
     def update_params(self):
         super().update_params()
         if self.trigger_mode == TriggerMode.NONE:
-            self.wait_cycles = self.time_to_cycles(self.period - self.dead_time)
+            self.wait_cycles = self.time_to_cycles(
+                self.period - self.dead_time)
         elif self.trigger_mode == TriggerMode.SEND_TRIGGER:
-            self.wait_cycles = self.time_to_cycles(self.period - self.dead_time)
+            self.wait_cycles = self.time_to_cycles(
+                self.period - self.dead_time)
         elif self.trigger_mode in [
             TriggerMode.EXTERNAL_TRIGGER,
             TriggerMode.RECEIVE_TRIGGER,

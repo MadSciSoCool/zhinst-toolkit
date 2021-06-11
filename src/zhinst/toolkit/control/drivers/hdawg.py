@@ -6,11 +6,11 @@
 import numpy as np
 import time
 
-from zhinst.toolkit.control.drivers.base import BaseInstrument, AWGCore, ToolkitError
-from zhinst.toolkit.control.node_tree import Parameter
-from zhinst.toolkit.control.parsers import Parse
-from zhinst.toolkit.interface import DeviceTypes
-from zhinst.toolkit.helpers import SequenceType, TriggerMode
+from .base import BaseInstrument, AWGCore, ToolkitError
+from ..node_tree import Parameter
+from ..parsers import Parse
+from ...interface import DeviceTypes
+from ...helpers import SequenceType, TriggerMode
 
 
 class HDAWG(BaseInstrument):
@@ -232,13 +232,15 @@ class AWG(AWGCore):
         )
         self.modulation_phase_shift = Parameter(
             self,
-            self._parent._get_node_dict(f"sines/{2 * self._index + 1}/phaseshift"),
+            self._parent._get_node_dict(
+                f"sines/{2 * self._index + 1}/phaseshift"),
             device=self._parent,
             set_parser=Parse.phase,
         )
         self.gain1 = Parameter(
             self,
-            self._parent._get_node_dict(f"awgs/{self._index}/outputs/0/gains/0"),
+            self._parent._get_node_dict(
+                f"awgs/{self._index}/outputs/0/gains/0"),
             device=self._parent,
             set_parser=[
                 lambda v: Parse.smaller_equal(v, 1.0),
@@ -247,7 +249,8 @@ class AWG(AWGCore):
         )
         self.gain2 = Parameter(
             self,
-            self._parent._get_node_dict(f"awgs/{self._index}/outputs/1/gains/1"),
+            self._parent._get_node_dict(
+                f"awgs/{self._index}/outputs/1/gains/1"),
             device=self._parent,
             set_parser=[
                 lambda v: Parse.smaller_equal(v, 1.0),
@@ -278,7 +281,8 @@ class AWG(AWGCore):
                 self.output1(value[0])
                 self.output2(value[1])
             else:
-                raise ToolkitError("The value must be a tuple or list of length 2!")
+                raise ToolkitError(
+                    "The value must be a tuple or list of length 2!")
 
     def enable_iq_modulation(self) -> None:
         """Enables IQ Modulation on the AWG Core.

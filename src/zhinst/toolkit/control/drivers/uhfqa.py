@@ -6,11 +6,11 @@
 import numpy as np
 from typing import List
 
-from zhinst.toolkit.control.drivers.base import BaseInstrument, AWGCore, ToolkitError
-from zhinst.toolkit.control.node_tree import Parameter
-from zhinst.toolkit.control.parsers import Parse
-from zhinst.toolkit.interface import DeviceTypes
-from zhinst.toolkit.helpers import SequenceType, TriggerMode
+from .base import BaseInstrument, AWGCore, ToolkitError, ScopeModule
+from ..node_tree import Parameter
+from ..parsers import Parse
+from ...interface import DeviceTypes
+from ...helpers import SequenceType, TriggerMode
 
 
 MAPPINGS = {
@@ -127,6 +127,7 @@ class UHFQA(BaseInstrument):
     def __init__(self, name: str, serial: str, discovery=None, **kwargs) -> None:
         super().__init__(name, DeviceTypes.UHFQA, serial, discovery, **kwargs)
         self._awg = None
+        self._scope = None
         self._channels = []
         self.integration_time = None
         self.integration_length = None
@@ -147,6 +148,7 @@ class UHFQA(BaseInstrument):
         super().connect_device(nodetree=nodetree)
         self._init_awg_cores()
         self._init_readout_channels()
+        self._init_scope()
 
     def factory_reset(self) -> None:
         """Loads the factory default settings."""
@@ -181,7 +183,8 @@ class UHFQA(BaseInstrument):
                 )
             for r in range(rows):
                 for c in range(cols):
-                    self._set(f"qas/0/crosstalk/rows/{r}/cols/{c}", matrix[r, c])
+                    self._set(
+                        f"qas/0/crosstalk/rows/{r}/cols/{c}", matrix[r, c])
 
     def enable_readout_channels(self, channels: List = range(10)) -> None:
         """Enables weighted integration on the specified readout channels.
@@ -311,6 +314,11 @@ class UHFQA(BaseInstrument):
         else:
             return 200
 
+    def _init_scope(self):
+        """Initialize the scope module of the device."""
+        self._scope = ScopeModule(self)
+        self._scope._setup()
+
     def _init_awg_cores(self):
         """Initialize the AWGs cores of the device."""
         self._awg = AWG(self, 0)
@@ -381,6 +389,10 @@ class UHFQA(BaseInstrument):
     @property
     def channels(self):
         return self._channels
+
+    @property
+    def scope(self):
+        return self._scope
 
 
 class AWG(AWGCore):
@@ -593,7 +605,8 @@ class AWG(AWGCore):
                     )
                 return self.output1(value[0]), self.output2(value[1])
             else:
-                raise ToolkitError("The value must be a tuple or list of length 2!")
+                raise ToolkitError(
+                    "The value must be a tuple or list of length 2!")
 
     def update_readout_params(self) -> None:
         """Updates the sequence parameters for 'Simple' sequence with values from the readout channels."""
@@ -689,12 +702,14 @@ class ReadoutChannel:
         )
         self.threshold = Parameter(
             self,
-            self._parent._get_node_dict(f"qas/0/thresholds/{self._index}/level"),
+            self._parent._get_node_dict(
+                f"qas/0/thresholds/{self._index}/level"),
             device=self._parent,
         )
         self.result = Parameter(
             self,
-            self._parent._get_node_dict(f"qas/0/result/data/{self._index}/wave"),
+            self._parent._get_node_dict(
+                f"qas/0/result/data/{self._index}/wave"),
             device=self._parent,
             get_parser=self._average_result,
         )

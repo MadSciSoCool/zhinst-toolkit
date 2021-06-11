@@ -3,7 +3,7 @@ import numpy as np
 from typing import List, Dict
 
 from .base import ToolkitError, BaseInstrument
-from zhinst.toolkit.control.node_tree import Parameter
+from ...node_tree import Parameter
 
 
 MAPPINGS = {
@@ -182,17 +182,20 @@ class DAQModule:
         for k, v in nodetree.items():
             name = k[1:].replace("/", "_")
             mapping = MAPPINGS[name] if name in MAPPINGS.keys() else None
-            setattr(self, name, Parameter(self, v, device=self, mapping=mapping))
+            setattr(self, name, Parameter(
+                self, v, device=self, mapping=mapping))
         self._init_settings()
 
     def _set(self, *args):
         if self._module is None:
-            raise ToolkitError("This DAQ is not connected to a dataAcquisitionModule!")
+            raise ToolkitError(
+                "This DAQ is not connected to a dataAcquisitionModule!")
         return self._module.set(*args, device=self._parent.serial)
 
     def _get(self, *args, valueonly: bool = True):
         if self._module is None:
-            raise ToolkitError("This DAQ is not connected to a dataAcquisitionModule!")
+            raise ToolkitError(
+                "This DAQ is not connected to a dataAcquisitionModule!")
         data = self._module.get(*args, device=self._parent.serial)
         return list(data.values())[0][0] if valueonly else data
 
@@ -441,7 +444,8 @@ class DAQModule:
         for node in self.signals:
             node = node.lower()
             if node not in result.keys():
-                raise ToolkitError(f"The signal {node} is not in {list(result.keys())}")
+                raise ToolkitError(
+                    f"The signal {node} is not in {list(result.keys())}")
             self._results[node] = DAQResult(
                 node, result[node][0], clk_rate=self._clk_rate
             )
@@ -522,7 +526,7 @@ class DAQResult:
         self._time = None
         self._frequencies = None
         if not self._is_fft:
-            self._time = self._claculate_time()
+            self._time = self._calculate_time()
         else:
             self._frequency = self._calculate_freqs()
 
@@ -546,7 +550,7 @@ class DAQResult:
     def shape(self):
         return self._value.shape
 
-    def _claculate_time(self):
+    def _calculate_time(self):
         timestamp = self._result_dict["timestamp"]
         return (timestamp[0] - timestamp[0][0]) / self._clk_rate
 

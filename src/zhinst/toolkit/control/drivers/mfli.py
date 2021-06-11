@@ -5,12 +5,12 @@
 
 import numpy as np
 
-from zhinst.toolkit.control.drivers.base import (
+from .base import (
     BaseInstrument,
     DAQModule as DAQ,
     SweeperModule as Sweeper,
 )
-from zhinst.toolkit.interface import DeviceTypes
+from ...interface import DeviceTypes
 
 
 class MFLI(BaseInstrument):

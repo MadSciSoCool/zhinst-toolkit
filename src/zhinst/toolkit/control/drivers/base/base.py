@@ -9,9 +9,9 @@ import logging
 import time
 
 import zhinst.ziPython as zi
-from zhinst.toolkit.control.connection import DeviceConnection, ZIConnection
-from zhinst.toolkit.control.node_tree import NodeTree
-from zhinst.toolkit.interface import InstrumentConfiguration, DeviceTypes
+from ...connection import DeviceConnection, ZIConnection
+from ...node_tree import NodeTree
+from ....interface import InstrumentConfiguration, DeviceTypes
 
 _logger = logging.getLogger(__name__)
 
@@ -78,7 +78,8 @@ class BaseInstrument:
         self._config._instrument._name = name
         self._config._instrument._config._device_type = device_type
         self._config._instrument._config._serial = serial
-        self._config._instrument._config._interface = kwargs.get("interface", "1GbE")
+        self._config._instrument._config._interface = kwargs.get(
+            "interface", "1GbE")
         self._config._api_config.host = kwargs.get("host", "localhost")
         self._config._api_config.port = kwargs.get("port", 8004)
         self._config._api_config.api = kwargs.get("api", 6)
@@ -130,7 +131,8 @@ class BaseInstrument:
     def factory_reset(self) -> None:
         """Loads the factory default settings."""
         self._set(f"/system/preset/load", 1)
-        _logger.info(f"Factory preset is loaded to device {self.serial.upper()}.")
+        _logger.info(
+            f"Factory preset is loaded to device {self.serial.upper()}.")
 
     def _check_ref_clock(self, blocking=True, timeout=30) -> None:
         """Check if reference clock is locked succesfully.
@@ -325,7 +327,8 @@ class BaseInstrument:
 
     def _get_streamingnodes(self) -> List:
         self._check_connected()
-        nodes = self._controller.get_nodetree(f"/{self.serial}/*", streamingonly=True)
+        nodes = self._controller.get_nodetree(
+            f"/{self.serial}/*", streamingonly=True)
         nodes = list(nodes.keys())
         streaming_nodes = {}
         for node in nodes:

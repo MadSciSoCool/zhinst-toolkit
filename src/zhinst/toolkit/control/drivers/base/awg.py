@@ -7,7 +7,7 @@ import numpy as np
 import time
 from typing import List, Union
 
-from zhinst.toolkit.helpers import SequenceProgram, Waveform, SequenceType
+from ....helpers import SequenceProgram, Waveform, SequenceType
 from .base import ToolkitError, BaseInstrument
 
 
@@ -180,13 +180,15 @@ class AWGCore:
         if self._program.sequence_type == SequenceType.SIMPLE:
             buffer_lengths = [w.buffer_length for w in self._waveforms]
             delays = [w.delay for w in self._waveforms]
-            self.set_sequence_params(buffer_lengths=buffer_lengths, delay_times=delays)
+            self.set_sequence_params(
+                buffer_lengths=buffer_lengths, delay_times=delays)
         self._module.set("compiler/sourcestring", self._program.get_seqc())
         while self._module.get_int("compiler/status") == -1:
             time.sleep(0.1)
         if self._module.get_int("compiler/status") == 1:
             raise ToolkitError(
-                "Upload failed: \n" + self._module.get_string("compiler/statusstring")
+                "Upload failed: \n" +
+                self._module.get_string("compiler/statusstring")
             )
         if self._module.get_int("compiler/status") == 2:
             raise Warning(
@@ -281,7 +283,8 @@ class AWGCore:
         tok = time.time()
         self._parent._set(zip(nodes, waveform_data))
         tik = time.time()
-        print(f"Upload of {len(waveform_data)} waveforms took {tik - tok:.5} s")
+        print(
+            f"Upload of {len(waveform_data)} waveforms took {tik - tok:.5} s")
 
     def compile_and_upload_waveforms(self) -> None:
         """Compiles the Sequence Program and uploads the queued waveforms.

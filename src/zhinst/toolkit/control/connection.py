@@ -5,8 +5,8 @@
 
 import json
 import zhinst.ziPython as zi
-from zhinst.toolkit.interface import DeviceTypes
-import zhinst.ziPython as zi
+
+from ..interface import DeviceTypes
 
 
 class ToolkitConnectionError(Exception):
@@ -76,6 +76,7 @@ class ZIConnection:
             self._awg_module = AWGModuleConnection(self._daq)
             self._daq_module = DAQModuleConnection(self._daq)
             self._sweeper_module = SweeperModuleConnection(self._daq)
+            self._scope_module = ScopeModuleConnection(self._daq)
         else:
             raise ToolkitConnectionError(
                 f"No connection could be established with the connection details:"
@@ -99,7 +100,8 @@ class ZIConnection:
 
         """
         if self._daq is None:
-            raise ToolkitConnectionError("No existing connection to data server")
+            raise ToolkitConnectionError(
+                "No existing connection to data server")
         if any(k is None for k in [serial, interface]):
             raise ToolkitConnectionError(
                 "To connect a Zurich Instruments' device, youd need a serial and an interface [1gbe or usb]"
@@ -126,7 +128,8 @@ class ZIConnection:
 
         """
         if not self.established:
-            raise ToolkitConnectionError("The connection is not yet established.")
+            raise ToolkitConnectionError(
+                "The connection is not yet established.")
         return self._daq.set(*args)
 
     def get(self, *args, **kwargs):
@@ -142,7 +145,8 @@ class ZIConnection:
 
         """
         if not self.established:
-            raise ToolkitConnectionError("The connection is not yet established.")
+            raise ToolkitConnectionError(
+                "The connection is not yet established.")
         return self._daq.get(*args, **kwargs)
 
     def get_sample(self, *args, **kwargs):
@@ -159,7 +163,8 @@ class ZIConnection:
 
         """
         if not self.established:
-            raise ToolkitConnectionError("The connection is not yet established.")
+            raise ToolkitConnectionError(
+                "The connection is not yet established.")
         return self._daq.getSample(*args, **kwargs)
 
     def list_nodes(self, *args, **kwargs):
@@ -175,7 +180,8 @@ class ZIConnection:
 
         """
         if not self.established:
-            raise ToolkitConnectionError("The connection is not yet established.")
+            raise ToolkitConnectionError(
+                "The connection is not yet established.")
         return self._daq.listNodesJSON(*args, **kwargs)
 
     @property
@@ -189,6 +195,66 @@ class ZIConnection:
     @property
     def sweeper_module(self):
         return self._sweeper_module
+
+
+class ScopeModuleConnection:
+    """Connection to an Scope Module.
+
+    Implements an awg module as `daq.scopeModule(...)` of the API with
+    get and set methods of the module. Allows to address different awgs on
+    different devices with the same awg module using the `update(...)` method.
+    Also wraps around all other methods from the API.
+
+    Arguments:
+        daq (zi.ziDAQServer)
+
+    """
+
+    def __init__(self, daq):
+        self._module = daq.scopeModule()
+
+    def execute(self):
+        self._module.execute()
+
+    def finish(self):
+        self._module.finish()
+
+    def progress(self):
+        return self._module.progress()
+
+    def read(self, **kwargs):
+        return self._module.read(**kwargs)
+
+    def subscribe(self, *args):
+        self._module.subscribe(*args)
+
+    def unsubscribe(self, *args):
+        self._module.unsubscribe(*args)
+
+    def save(self, *args):
+        self._module.save(*args)
+
+    def clear(self):
+        self._module.clear()
+
+    def set(self, *args):
+        self._module.set(*args)
+
+    def get(self, *args):
+        return self._module.get(*args, flat=True)
+
+    def get_int(self, *args):
+        return self._module.getInt(*args)
+
+    def get_double(self, *args):
+        return self._module.getDouble(*args)
+
+    def get_string(self, *args):
+        return self._module.getString(*args)
+
+    def get_nodetree(self, prefix, **kwargs):
+        tree = json.loads(self._module.listNodesJSON(prefix, **kwargs))
+        return tree
 
 
 class AWGModuleConnection:
@@ -439,7 +505,8 @@ class DeviceConnection(object):
         """Connects the device to the data server."""
 
         if self.discovery is not None:
-            self.normalized_serial = self._normalize_serial(self._device.serial)
+            self.normalized_serial = self._normalize_serial(
+                self._device.serial)
         else:
             self.normalized_serial = self._device.serial
 
@@ -503,13 +570,15 @@ class DeviceConnection(object):
             else:
                 raise ToolkitConnectionError("Invalid argument!")
             if (
-                self._device.device_type in [DeviceTypes.UHFLI, DeviceTypes.MFLI]
+                self._device.device_type in [
+                    DeviceTypes.UHFLI, DeviceTypes.MFLI]
                 and "sample" in command.lower()
             ):
                 data = self._connection.get_sample(node_string)
                 return self._get_value_from_streamingnode(data)
             else:
-                data = self._connection.get(node_string, settingsonly=False, flat=True)
+                data = self._connection.get(
+                    node_string, settingsonly=False, flat=True)
             data = self._get_value_from_dict(data)
             if valueonly:
                 if len(data) > 1:
@@ -558,7 +627,8 @@ class DeviceConnection(object):
         if not isinstance(data, dict):
             raise ToolkitConnectionError("Something went wrong...")
         if not len(data):
-            raise ToolkitConnectionError("No data returned... does the node exist?")
+            raise ToolkitConnectionError(
+                "No data returned... does the node exist?")
         new_data = dict()
         for key, data_dict in data.items():
             key = key.replace(f"/{self.normalized_serial}/", "")
@@ -586,9 +656,11 @@ class DeviceConnection(object):
         if not isinstance(data, dict):
             raise ToolkitConnectionError("Something went wrong...")
         if not len(data):
-            raise ToolkitConnectionError("No data returned... does the node exist?")
+            raise ToolkitConnectionError(
+                "No data returned... does the node exist?")
         if "x" not in data.keys() or "y" not in data.keys():
-            raise ToolkitConnectionError("No 'x' or 'y' in streaming node data!")
+            raise ToolkitConnectionError(
+                "No 'x' or 'y' in streaming node data!")
         return data["x"][0] + 1j * data["y"][0]
 
     def _commands_to_node(self, settings):
@@ -617,7 +689,8 @@ class DeviceConnection(object):
                         "node/value must be specified as pairs!"
                     )
             except TypeError:
-                raise ToolkitConnectionError("node/value must be specified as pairs!")
+                raise ToolkitConnectionError(
+                    "node/value must be specified as pairs!")
             new_settings.append((self._command_to_node(args[0]), args[1]))
         return new_settings
 

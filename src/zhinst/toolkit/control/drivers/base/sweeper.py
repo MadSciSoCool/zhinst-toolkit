@@ -3,7 +3,7 @@ import numpy as np
 from typing import List, Dict
 
 from .base import ToolkitError, BaseInstrument
-from zhinst.toolkit.control.node_tree import Parameter
+from ...node_tree import Parameter
 
 
 MAPPINGS = {
@@ -180,17 +180,20 @@ class SweeperModule:
         for k, v in nodetree.items():
             name = k[1:].replace("/", "_")
             mapping = MAPPINGS[name] if name in MAPPINGS.keys() else None
-            setattr(self, name, Parameter(self, v, device=self, mapping=mapping))
+            setattr(self, name, Parameter(
+                self, v, device=self, mapping=mapping))
         self._init_settings()
 
     def _set(self, *args):
         if self._module is None:
-            raise ToolkitError("This DAQ is not connected to a dataAcquisitionModule!")
+            raise ToolkitError(
+                "This DAQ is not connected to a dataAcquisitionModule!")
         return self._module.set(*args, device=self._parent.serial)
 
     def _get(self, *args, valueonly: bool = True):
         if self._module is None:
-            raise ToolkitError("This DAQ is not connected to a dataAcquisitionModule!")
+            raise ToolkitError(
+                "This DAQ is not connected to a dataAcquisitionModule!")
         data = self._module.get(*args, device=self._parent.serial)
         return list(data.values())[0][0] if valueonly else data
 

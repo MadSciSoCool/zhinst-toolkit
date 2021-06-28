@@ -4,15 +4,8 @@
 # of the MIT license. See the LICENSE file for details.
 
 import json
-<<<<<<< HEAD
 import zhinst.ziPython as zi
-
 from ..interface import DeviceTypes
-=======
-
-from zhinst.toolkit.interface import DeviceTypes
-import zhinst.ziPython as zi
->>>>>>> upstream/master
 
 
 class ToolkitConnectionError(Exception):
@@ -148,7 +141,8 @@ class ZIConnection:
 
         """
         if not self.established:
-            raise ToolkitConnectionError("The connection is not yet established.")
+            raise ToolkitConnectionError(
+                "The connection is not yet established.")
         for setting in args[0]:
             self._daq.setVector(setting[0], setting[1])
 

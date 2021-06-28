@@ -59,8 +59,8 @@ class ScopeModule:
     the :class:`ScopeModule`. The values in the dictionary are of type
     :class:`ScopeResults`.
         >>> # retrieve the measurement results
-        >>> result = mf.daq.results
-        >>> result
+        >>> results = qa.scope.results
+        >>> results
         <zhinst_test.toolkit.control.drivers.base.scope.ScopeResult object at 0x000001A34E9DCE80>
             path:        /dev2571/scopes/0/wave
             value:       (1, 4096)
@@ -139,7 +139,7 @@ class ScopeModule:
         self._results = ScopeResult(path=path,
                                     result_dict=result[self._parent.serial]['scopes']['0']['wave'][0][0],
                                     clk_rate=self._clk_rate,
-                                    is_fft=self._get("mode") == 3)
+                                    acquisition_mode=self._get("mode"))
 
     @property
     def _clk_rate(self):
@@ -195,7 +195,7 @@ class ScopeResult:
 
     """
 
-    def __init__(self, path: str, result_dict: Dict, clk_rate: float = 1.8e9, is_fft: bool = False) -> None:
+    def __init__(self, path: str, result_dict: Dict, clk_rate: float = 1.8e9, acquisition_mode: int = 0) -> None:
         self._path = path
         self._clk_rate = clk_rate
         self._result_dict = result_dict
@@ -203,7 +203,9 @@ class ScopeResult:
         self._value = self._result_dict.get("wave")
         self._time = None
         self._frequencies = None
-        self._is_fft = is_fft
+        if acquisition_mode == 0:
+            self._value = self._value / 2 ** 15
+        self._is_fft = acquisition_mode == 3
         if not self._is_fft:
             self._time = self._calculate_time()
         else:

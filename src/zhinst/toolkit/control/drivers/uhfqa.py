@@ -145,8 +145,8 @@ class UHFQA(BaseInstrument):
                 as `zhinst-toolkit` Parameters. (default: True)
 
         """
-        super().connect_device(nodetree=nodetree)
         self._init_awg_cores()
+        super().connect_device(nodetree=nodetree)
         self._init_readout_channels()
         self._init_scope()
 
@@ -826,7 +826,8 @@ class ReadoutChannel:
         freq = self.readout_frequency()
         envelope = self.int_weights_envelope()
         node = f"/qas/0/integration/weights/{self._index}/"
-        self._parent._set(node + "real", self._demod_weights(length, envelope, freq, 0))
+        self._parent._set(
+            node + "real", self._demod_weights(length, envelope, freq, 0))
         self._parent._set(
             node + "imag", self._demod_weights(length, envelope, freq, 90)
         )
@@ -840,7 +841,8 @@ class ReadoutChannel:
             raise ValueError("This frequency must be positive.")
         clk_rate = 1.8e9
         x = np.arange(0, length, 1)
-        y = envelope * np.sin(2 * np.pi * freq * x / clk_rate + np.deg2rad(phase))
+        y = envelope * np.sin(2 * np.pi * freq * x /
+                              clk_rate + np.deg2rad(phase))
         return y
 
     def _average_result(self, result):

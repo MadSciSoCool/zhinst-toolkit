@@ -145,8 +145,8 @@ class UHFQA(BaseInstrument):
                 as `zhinst-toolkit` Parameters. (default: True)
 
         """
-        self._init_awg_cores()
         super().connect_device(nodetree=nodetree)
+        self._init_awg_cores()
         self._init_readout_channels()
         self._init_scope()
 

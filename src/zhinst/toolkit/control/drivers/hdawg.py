@@ -297,7 +297,7 @@ class AWG(AWGCore):
         )
         self.modulation_freq = Parameter(
             self,
-            self._parent._get_node_dict(f"oscs/{4 * self._index}/freq"),
+            self._parent._get_node_dict(f"oscs/{self._index}/freq"),
             device=self._parent,
             set_parser=lambda v: Parse.greater(v, 0),
         )
@@ -335,6 +335,8 @@ class AWG(AWGCore):
             set_parser=Parse.set_true_false,
             get_parser=Parse.get_true_false,
         )
+        """
+        --------------- for some reason the zysnc node has not been implemented yet -----------
         self.zsync_register_mask = Parameter(
             self,
             self._parent._get_node_dict(f"awgs/{self._index}/zsync/register/mask"),
@@ -389,6 +391,7 @@ class AWG(AWGCore):
                 lambda v: Parse.greater_equal(v, 0),
             ],
         )
+        """
 
     def _init_ct(self):
         """Initialize the command table of the AWG."""

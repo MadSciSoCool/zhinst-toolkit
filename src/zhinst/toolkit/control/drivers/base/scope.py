@@ -118,6 +118,8 @@ class ScopeModule:
 
         """
         self._set("clearhistory", 1)
+        self._set("averager/restart", 1)
+        self._parent._set("scopes/0/enable", 1)
         path = f'/{self._parent.serial}/scopes/0/wave'
         self._module.subscribe(path)
         if verbose:

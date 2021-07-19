@@ -1,3 +1,4 @@
+from logging import warn
 import time
 import numpy as np
 from typing import List, Dict
@@ -78,6 +79,7 @@ class ScopeModule:
         self._parent = parent
         self._module = None
         self._results = None
+        self._path = f'/{self._parent.serial}/scopes/0/wave'
 
     def _setup(self) -> None:
         self._module = self._parent._controller._connection._scope_module
@@ -102,7 +104,7 @@ class ScopeModule:
         data = self._module.get(*args)
         return list(data.values())[0][0] if valueonly else data
 
-    def measure(self, verbose: bool = True, timeout: float = 20) -> None:
+    def measure(self, verbose: bool = True, timeout: float = 20, blocking: bool = True) -> None:
         """Performs the measurement.
 
         Starts a measurement and stores the result in `scope.results`. This
@@ -119,29 +121,55 @@ class ScopeModule:
         """
         self._set("clearhistory", 1)
         self._set("averager/restart", 1)
+        self._parent._set("scopes/0/enable", 0)
+        # a hardware bug that makes the scope stuck if set /scopes/0/enable to be 1 twice
         self._parent._set("scopes/0/enable", 1)
-        path = f'/{self._parent.serial}/scopes/0/wave'
-        self._module.subscribe(path)
+        self._module.subscribe(self._path)
         if verbose:
-            print(f"subscribed to: {path}")
+            print(f"subscribed to: {self._path}")
         self._module.execute()
-        tik = time.time()
-        while self._module.progress() != 1:
+        self._tik = time.time()
+        self._timeout = timeout
+        if blocking:
+            while self.progress != 1:
+                if verbose:
+                    print(
+                        f"Progress: {(self._module.progress()[0] * 100):.1f}%")
+                time.sleep(0.5)
+                # tok = time.time()
+                # if tok - self._tik > timeout:
+                #     raise TimeoutError()
             if verbose:
-                print(f"Progress: {(self._module.progress()[0] * 100):.1f}%")
-            time.sleep(0.5)
-            tok = time.time()
-            if tok - tik > timeout:
-                raise TimeoutError()
-        if verbose:
-            print("Finished")
-        result = self._module.read()  # flat=True
-        self._module.finish()
-        self._module.unsubscribe("*")
-        self._results = ScopeResult(path=path,
-                                    result_dict=result[self._parent.serial]['scopes']['0']['wave'][0][0],
-                                    clk_rate=self._clk_rate,
-                                    acquisition_mode=self._get("mode"))
+                print("Finished")
+            self.finish()
+        else:
+            if verbose:
+                print("""The scope is now running in non-blocking mode: 
+                      use scope.progress to check the progress (0 to 1)
+                      and execute scope.finish() to save the result""")
+
+    def finish(self):
+        if self._module.progress() == 1:
+            result = self._module.read()  # flat=True
+            self._module.finish()
+            self._module.unsubscribe("*")
+            trig_reference = self._parent._get("scopes/0/trigreference")
+            trig_delay = self._parent._get("scopes/0/trigdelay")
+            self._results = ScopeResult(path=self._path,
+                                        result_dict=result[self._parent.serial]['scopes']['0']['wave'][0][0],
+                                        clk_rate=self._clk_rate,
+                                        acquisition_mode=self._get("mode"),
+                                        trig_reference=trig_reference,
+                                        trig_delay=trig_delay)
+        else:
+            warn("""The scope has not finished reading, the result is not saved""")
+
+    @property
+    def progress(self):
+        tok = time.time()
+        if tok - self._tik > self._timeout:
+            raise TimeoutError()
+        return self._module.progress()
 
     @property
     def _clk_rate(self):
@@ -197,7 +225,7 @@ class ScopeResult:
 
     """
 
-    def __init__(self, path: str, result_dict: Dict, clk_rate: float = 1.8e9, acquisition_mode: int = 0) -> None:
+    def __init__(self, path: str, result_dict: Dict, clk_rate: float = 1.8e9, acquisition_mode: int = 0, trig_reference: float = 0.5, trig_delay: float = 0) -> None:
         self._path = path
         self._clk_rate = clk_rate
         self._result_dict = result_dict
@@ -209,7 +237,7 @@ class ScopeResult:
             self._value = self._value / 2 ** 15
         self._is_fft = acquisition_mode == 3
         if not self._is_fft:
-            self._time = self._calculate_time()
+            self._time = self._calculate_time(trig_reference, trig_delay)
         else:
             self._frequency = self._calculate_freqs()
 
@@ -233,8 +261,12 @@ class ScopeResult:
     def shape(self):
         return self._value.shape
 
-    def _calculate_time(self):
-        return np.arange(self._result_dict.get("totalsamples")) / self._clk_rate
+    def _calculate_time(self, trig_reference, trig_delay):
+        raw_time = np.arange(self._result_dict.get(
+            "totalsamples")) / self._clk_rate
+        amp = raw_time[-1] / 2
+        offset = 2 * trig_reference * amp - trig_delay
+        return raw_time - offset
 
     def _calculate_freqs(self):
         bin_count = self._result_dict.get("totalsamples")

@@ -126,7 +126,8 @@ class Sequence(object):
     target = attr.ib(
         default=DeviceTypes.HDAWG,
         validator=attr.validators.in_(
-            [DeviceTypes.HDAWG, DeviceTypes.UHFQA, DeviceTypes.UHFLI, DeviceTypes.SHFQA]
+            [DeviceTypes.HDAWG, DeviceTypes.UHFQA,
+                DeviceTypes.UHFLI, DeviceTypes.SHFQA]
         ),
     )
     clock_rate = attr.ib(default=2.4e9, validator=is_greater_equal(0))
@@ -271,6 +272,7 @@ class Sequence(object):
                 SequenceCommand.wait_dig_trigger(2, self.target).rstrip()
                 + SequenceCommand.space()
                 + SequenceCommand.inline_comment("Wait for external clock")
+                + SequenceCommand.tab()
                 + SequenceCommand.play_trigger()
             )
             # Wait for self triggering
@@ -290,15 +292,19 @@ class Sequence(object):
             )
             # Send out the trigger signal
             self.trigger_cmd_send = (
-                SequenceCommand.comment_line() + SequenceCommand.play_trigger()
+                SequenceCommand.comment_line()
+                + SequenceCommand.tab()
+                + SequenceCommand.play_trigger()
             )
             # Wait for self triggering
             # strip '\n' at the end and add an inline comment
-            self.trigger_cmd_wait = (
-                SequenceCommand.wait_dig_trigger(1, self.target).rstrip()
-                + SequenceCommand.space()
-                + SequenceCommand.inline_comment("Wait for self trigger")
-            )
+            # self.trigger_cmd_wait = (
+            # SequenceCommand.wait_dig_trigger(1, self.target).rstrip()
+            # + SequenceCommand.space()
+            # + SequenceCommand.inline_comment("Wait for self trigger")
+            # )
+            # do not wait if in send trigger mode !!
+            self.trigger_cmd_wait = SequenceCommand.comment_line()
         elif self.trigger_mode in [
             TriggerMode.EXTERNAL_TRIGGER,
             TriggerMode.RECEIVE_TRIGGER,
@@ -309,7 +315,8 @@ class Sequence(object):
             self.dead_cycles = 0
             self.trigger_cmd_define = SequenceCommand.comment_line()
             self.trigger_cmd_send = (
-                SequenceCommand.comment_line() + SequenceCommand.comment_line()
+                SequenceCommand.comment_line() + SequenceCommand.tab() +
+                SequenceCommand.comment_line()
             )
             # Wait for external trigger
             self.trigger_cmd_wait = SequenceCommand.wait_dig_trigger(
@@ -431,17 +438,18 @@ class SimpleSequence(Sequence):
         for i in range(self.n_HW_loop):
             self.sequence += SequenceCommand.assign_wave_index(i)
         self.sequence += SequenceCommand.new_line()
-        self.sequence += SequenceCommand.inline_comment("Trigger commands")
-        # Send trigger (depends on the trigger mode)
-        self.sequence += self.trigger_cmd_send
-        # Wait for external trigger (depends on the trigger mode)
-        self.sequence += self.trigger_cmd_wait
-        # Compensate for trigger latency differences (depends on the device type)
-        self.sequence += self.trigger_cmd_latency
-        self.sequence += SequenceCommand.new_line()
         self.sequence += SequenceCommand.inline_comment("Start main sequence")
         # Start repeat loop in sequencer
         self.sequence += SequenceCommand.repeat(self.repetitions)
+        # trigger commands should be executed each iteration
+        self.sequence += SequenceCommand.tab() + \
+            SequenceCommand.inline_comment("Trigger commands")
+        # Send trigger (depends on the trigger mode)
+        self.sequence += SequenceCommand.tab() + self.trigger_cmd_send
+        # Wait for external trigger (depends on the trigger mode)
+        self.sequence += SequenceCommand.tab() + self.trigger_cmd_wait
+        # Compensate for trigger latency differences (depends on the device type)
+        self.sequence += SequenceCommand.tab() + self.trigger_cmd_latency
         # Loop over the waveforms
         for i in range(self.n_HW_loop):
             self.sequence += SequenceCommand.tab() + SequenceCommand.count_waveform(
